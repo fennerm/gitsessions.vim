@@ -9,7 +9,7 @@ if exists('g:loaded_gitsessions') || v:version < 700 || &cp
 endif
 let g:loaded_gitsessions = 1
 
-function! s:rtrim_slashes(string)
+function! s:RTrim_slashes(string)
     return substitute(a:string, '[/\\]$', '', '')
 endfunction
 
@@ -22,7 +22,7 @@ endif
 if !exists('g:gitsessions_dir')
     let g:gitsessions_dir = 'sessions'
 else
-    let g:gitsessions_dir = s:rtrim_slashes(g:gitsessions_dir)
+    let g:gitsessions_dir = s:RTrim_slashes(g:gitsessions_dir)
 endif
 
 " Cache session file
@@ -41,94 +41,94 @@ endif
 
 " HELPER FUNCTIONS
 
-function! s:replace_bad_chars(string)
+function! s:ReplaceBadChars(string)
     return substitute(a:string, '/', '_', 'g')
 endfunction
 
-function! s:trim(string)
+function! s:Trim(string)
     return substitute(substitute(a:string, '^\s*\(.\{-}\)\s*$', '\1', ''), '\n', '', '')
 endfunction
 
-function! s:git_branch_name()
-    return s:replace_bad_chars(s:trim(system("\git rev-parse --abbrev-ref HEAD")))
+function! s:GitBranchName()
+    return s:ReplaceBadChars(s:Trim(system("\git rev-parse --abbrev-ref HEAD")))
 endfunction
 
-function! s:in_git_repo()
+function! s:InGitRepo()
     let l:is_git_repo = system("\git rev-parse --git-dir >/dev/null")
     return v:shell_error == 0
 
 endfunction
 
-function! s:os_sep()
+function! s:OsSep()
     " TODO(wting|2013-12-29): untested for Windows gvim
     return has('unix') ? '/' : '\'
 endfunction
 
-function! s:is_abs_path(path)
-    return a:path[0] == s:os_sep()
+function! s:IsAbsPath(path)
+    return a:path[0] == s:OsSep()
 endfunction
 
 " LOGIC FUNCTIONS
 
-function! s:parent_dir(path)
-    let l:sep = s:os_sep()
-    let l:front = s:is_abs_path(a:path) ? l:sep : ''
+function! s:ParentDir(path)
+    let l:sep = s:OsSep()
+    let l:front = s:IsAbsPath(a:path) ? l:sep : ''
     return l:front . join(split(a:path, l:sep)[:-2], l:sep)
 endfunction
 
-function! s:find_git_dir(dir)
+function! s:FindGitDir(dir)
     if isdirectory(a:dir . '/.git')
         return a:dir . '/.git'
     elseif has('file_in_path') && has('path_extra')
         return finddir('.git', a:dir . ';')
     else
-        return s:find_git_dir_aux(a:dir)
+        return s:FindGitDirAux(a:dir)
     endif
 endfunction
 
-function! s:find_git_dir_aux(dir)
-    return isdirectory(a:dir . '/.git') ? a:dir . '/.git' : s:find_git_dir_aux(s:parent_dir(a:dir))
+function! s:FindGitDirAux(dir)
+    return isdirectory(a:dir . '/.git') ? a:dir . '/.git' : s:FindGitDirAux(s:ParentDir(a:dir))
 endfunction
 
-function! s:find_project_dir(dir)
-    return s:parent_dir(s:find_git_dir(a:dir))
+function! s:FindProjectDir(dir)
+    return s:ParentDir(s:FindGitDir(a:dir))
 endfunction
 
-function! s:session_path(sdir, pdir)
+function! s:SessionPath(sdir, pdir)
     let l:path = a:sdir . a:pdir
-    return s:is_abs_path(a:sdir) ? l:path : g:VIMFILESDIR . l:path
+    return s:IsAbsPath(a:sdir) ? l:path : g:VIMFILESDIR . l:path
 endfunction
 
-function! s:session_dir()
-    if s:in_git_repo()
-        return s:session_path(g:gitsessions_dir, s:find_project_dir(getcwd()))
+function! s:SessionDir()
+    if s:InGitRepo()
+        return s:SessionPath(g:gitsessions_dir, s:FindProjectDir(getcwd()))
     else
-        return s:session_path(g:gitsessions_dir, getcwd())
+        return s:SessionPath(g:gitsessions_dir, getcwd())
     endif
 endfunction
 
-function! s:session_file(invalidate_cache)
-    if g:gitsessions_use_cache && !a:invalidate_cache && exists('s:cached_session_file')
-        return s:cached_session_file
+function! s:SessionFile(invalidate_cache)
+    if g:gitsessions_use_cache && !a:invalidate_cache && exists('s:cached_SessionFile')
+        return s:cached_SessionFile
     endif
-    let l:dir = s:session_dir()
-    let l:branch = s:git_branch_name()
-    if exists('s:cached_session_file')
-        unlet s:cached_session_file
+    let l:dir = s:SessionDir()
+    let l:branch = s:GitBranchName()
+    if exists('s:cached_SessionFile')
+        unlet s:cached_SessionFile
     endif
-    let s:cached_session_file = (empty(l:branch)) ? l:dir . '/master' : l:dir . '/' . l:branch
-    return s:cached_session_file
+    let s:cached_SessionFile = (empty(l:branch)) ? l:dir . '/master' : l:dir . '/' . l:branch
+    return s:cached_SessionFile
 endfunction
 
 " PUBLIC FUNCTIONS
 
 function! g:GitSessionSave()
-    if !s:in_git_repo()
+    if !s:InGitRepo()
         echoerr "not in git repo"
         return
     endif
-    let l:dir = s:session_dir()
-    let l:file = s:session_file(1)
+    let l:dir = s:SessionDir()
+    let l:file = s:SessionFile(1)
 
     if !isdirectory(l:dir)
         call mkdir(l:dir, 'p')
@@ -157,7 +157,7 @@ endfunction
 
 function! g:GitSessionUpdate(...)
     let l:show_msg = a:0 > 0 ? a:1 : 1
-    let l:file = s:session_file(0)
+    let l:file = s:SessionFile(0)
 
     if s:session_exist && filereadable(l:file)
         execute 'mksession!' l:file
@@ -173,7 +173,7 @@ function! g:GitSessionLoad(...)
     endif
 
     let l:show_msg = a:0 > 0 ? a:1 : 0
-    let l:file = s:session_file(1)
+    let l:file = s:SessionFile(1)
 
     if filereadable(l:file)
         let s:session_exist = 1
@@ -189,10 +189,10 @@ function! g:GitSessionDelete()
     " Delete is a tricky case, we still need to use cached version if any.
     " This version was used and saved by GitSessionUpdate(), however
     " we should ensure that session cached variable is cleared.
-    let l:file = s:session_file(1)
+    let l:file = s:SessionFile(1)
     let s:session_exist = 0
-    if exists('s:cached_session_file')
-        unlet s:cached_session_file
+    if exists('s:cached_SessionFile')
+        unlet s:cached_SessionFile
     endif
     if filereadable(l:file)
         call delete(l:file)
