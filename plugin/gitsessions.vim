@@ -50,7 +50,12 @@ function! s:Trim(string)
 endfunction
 
 function! s:GitBranchName()
-    return s:ReplaceBadChars(s:Trim(system("\git rev-parse --abbrev-ref HEAD")))
+    let l:branch_name = s:ReplaceBadChars(s:Trim(system("\git rev-parse --abbrev-ref HEAD")))
+    if v:shell_error == 128
+        return 0
+    else
+        return l:branch_name
+    endif
 endfunction
 
 function! s:InGitRepo()
@@ -113,11 +118,34 @@ function! s:SessionFile(invalidate_cache)
     endif
     let l:dir = s:SessionDir()
     let l:branch = s:GitBranchName()
+
     if exists('s:cached_SessionFile')
         unlet s:cached_SessionFile
     endif
-    let s:cached_SessionFile = (empty(l:branch)) ? l:dir . '/master' : l:dir . '/' . l:branch
+
+    if l:branch == 0
+        let s:cached_SessionFile = l:dir . '/session'
+    else
+        let s:cached_SessionFile = (empty(l:branch)) ? l:dir . '/master' : l:dir . '/' . l:branch
+    endif
     return s:cached_SessionFile
+endfunction
+
+function! g:SessionFile(invalidate_cache)
+    if g:gitsessions_use_cache && !a:invalidate_cache && exists('g:cached_SessionFile')
+        return g:cached_SessionFile
+    endif
+    let l:dir = g:SessionDir()
+    let l:branch = g:GitBranchName()
+    if exists('g:cached_SessionFile')
+        unlet g:cached_SessionFile
+    endif
+    if l:branch == 0
+        let g:cached_SessionFile = l:dir . '/session'
+    else
+        let g:cached_SessionFile = (empty(l:branch)) ? l:dir . '/master' : l:dir . '/' . l:branch
+    endif
+    return g:cached_SessionFile
 endfunction
 
 " PUBLIC FUNCTIONS
