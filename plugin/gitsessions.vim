@@ -151,10 +151,6 @@ endfunction
 " PUBLIC FUNCTIONS
 
 function! g:GitSessionSave()
-    if !s:InGitRepo()
-        echoerr "not in git repo"
-        return
-    endif
     let l:dir = s:SessionDir()
     let l:file = s:SessionFile(1)
 
